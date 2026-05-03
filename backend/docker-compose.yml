@@ -8,8 +8,19 @@ services:
     container_name: presence_tracker_backend
     ports:
       - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - MQTT_BROKER_URL=${MQTT_BROKER_URL}
+      - MQTT_CLIENT_ID=${MQTT_CLIENT_ID}
+      - MQTT_TOPIC=${MQTT_TOPIC}
+      - INFLUX_URL=${INFLUX_URL}
+      - INFLUX_ORG=${INFLUX_ORG}
+      - INFLUX_BUCKET=${INFLUX_BUCKET}
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
     depends_on:
       - mosquitto
+      - influxdb
     restart: unless-stopped
 
   mosquitto:
@@ -20,4 +31,23 @@ services:
       - "9001:9001" # WebSockets 
     volumes:
       - ./Mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - ./influxdb/data:/var/lib/influxdb2
+      - ./influxdb/config:/etc/influxdb2
     restart: unless-stopped
