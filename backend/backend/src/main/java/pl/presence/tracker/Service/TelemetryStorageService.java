@@ -1,6 +1,5 @@
 package pl.presence.tracker.Service;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 
@@ -13,7 +12,6 @@ import com.influxdb.client.write.Point;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.messaging.Message;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -39,8 +37,7 @@ public class TelemetryStorageService {
         this.clock = Clock.systemUTC();
     }
 
-    public void handleMqttMessage(Message<?> message) {
-        String payload = readPayload(message.getPayload());
+    public void handlePayload(String payload) {
         if (payload == null || payload.isBlank()) {
             return;
         }
@@ -97,16 +94,6 @@ public class TelemetryStorageService {
             }
         }
         return null;
-    }
-
-    private String readPayload(Object payload) {
-        if (payload == null) {
-            return null;
-        }
-        if (payload instanceof byte[] bytes) {
-            return new String(bytes, StandardCharsets.UTF_8);
-        }
-        return payload.toString();
     }
 
     private record TelemetryPayload(String deviceId, int count) {

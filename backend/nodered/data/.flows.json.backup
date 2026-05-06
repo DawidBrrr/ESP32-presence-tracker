@@ -1,0 +1,78 @@
+[
+    {
+        "id": "6a059ac7ce3f80c2",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "54b4ecbbeb9bdfdd",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "localhost",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "09140ef5f1a1ca91",
+        "type": "mqtt in",
+        "z": "6a059ac7ce3f80c2",
+        "name": "",
+        "topic": "telemetry",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "54b4ecbbeb9bdfdd",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 440,
+        "y": 280,
+        "wires": [
+            [
+                "0473b0a2a1f3e92b"
+            ]
+        ]
+    },
+    {
+        "id": "0473b0a2a1f3e92b",
+        "type": "debug",
+        "z": "6a059ac7ce3f80c2",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 700,
+        "y": 280,
+        "wires": []
+    }
+]
