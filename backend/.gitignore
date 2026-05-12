@@ -1,1 +1,14 @@
 .env
+
+# Container data volumes (local state)
+influxdb/data/
+influxdb/config/
+kafka/data/
+zookeeper/data/
+
+# Node-RED runtime artifacts
+nodered/data/node_modules/
+nodered/data/.npm/
+nodered/data/.npm/_logs/
+nodered/data/*.log
+nodered/data/*.backup

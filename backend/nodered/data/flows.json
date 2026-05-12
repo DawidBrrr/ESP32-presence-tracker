@@ -39,6 +39,30 @@
         "sessionExpiry": ""
     },
     {
+        "id": "4e22bb127a261370",
+        "type": "kafkajs-client",
+        "name": "Telemetry",
+        "brokers": "kafka:9092",
+        "clientid": "people-counter-gateway",
+        "connectiontimeout": "3000",
+        "requesttimeout": "25000",
+        "advancedretry": false,
+        "maxretrytime": "30000",
+        "initialretrytime": "300",
+        "factor": "0.2",
+        "multiplier": "2",
+        "retries": "5",
+        "auth": "none",
+        "tlsselfsign": false,
+        "tlscacert": "",
+        "tlsclientcert": "",
+        "tlsprivatekey": "",
+        "tlspassphrase": "",
+        "saslssl": true,
+        "saslmechanism": "plain",
+        "loglevel": "error"
+    },
+    {
         "id": "09140ef5f1a1ca91",
         "type": "mqtt in",
         "z": "6a059ac7ce3f80c2",
@@ -55,12 +79,69 @@
         "y": 280,
         "wires": [
             [
-                "0473b0a2a1f3e92b"
+                "1cd25e53e9436a41"
             ]
         ]
     },
     {
-        "id": "0473b0a2a1f3e92b",
+        "id": "1cd25e53e9436a41",
+        "type": "json",
+        "z": "6a059ac7ce3f80c2",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 650,
+        "y": 260,
+        "wires": [
+            [
+                "e9790b14cfe87612"
+            ]
+        ]
+    },
+    {
+        "id": "e9790b14cfe87612",
+        "type": "function",
+        "z": "6a059ac7ce3f80c2",
+        "name": "function 1",
+        "func": "// Ustawiamy tylko klucz (żeby zachować kolejność zdarzeń z danych drzwi)\nmsg.key = msg.payload.sensorId || \"default_sensor\";\n\n// Zostawiamy msg.payload w spokoju (jako czysty obiekt JavaScript/JSON)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 280,
+        "wires": [
+            [
+                "50517a305f795ccd",
+                "6c4e054a579abcab"
+            ]
+        ]
+    },
+    {
+        "id": "50517a305f795ccd",
+        "type": "kafkajs-producer",
+        "z": "6a059ac7ce3f80c2",
+        "name": "Telemetry",
+        "client": "4e22bb127a261370",
+        "topic": "telemetry",
+        "advancedoptions": false,
+        "acknowledge": "all",
+        "partition": "",
+        "headeritems": {},
+        "key": "",
+        "responsetimeout": 30000,
+        "transactiontimeout": 60000,
+        "metadatamaxage": 300000,
+        "allowautotopiccreation": false,
+        "x": 1000,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "6c4e054a579abcab",
         "type": "debug",
         "z": "6a059ac7ce3f80c2",
         "name": "debug 1",
@@ -71,8 +152,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 700,
-        "y": 280,
+        "x": 1020,
+        "y": 240,
         "wires": []
     }
 ]

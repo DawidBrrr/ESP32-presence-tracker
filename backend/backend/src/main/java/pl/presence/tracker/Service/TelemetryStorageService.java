@@ -49,16 +49,24 @@ public class TelemetryStorageService {
 
         Point point = Point.measurement("telemetry")
                 .addTag("device_id", telemetry.deviceId())
-                .addField("people_count", telemetry.count())
+                .addField("count", telemetry.count())
                 .time(Instant.now(clock), WritePrecision.MS);
 
-        influxDBClient.getWriteApiBlocking().writePoint(influxBucket, influxOrg, point);
-        log.info("Saved telemetry: deviceId={}, count={}", telemetry.deviceId(), telemetry.count());
+        try {
+            influxDBClient.getWriteApiBlocking().writePoint(influxBucket, influxOrg, point);
+            log.info("Saved telemetry: deviceId={}, count={}", telemetry.deviceId(), telemetry.count());
+        } catch (Exception ex) {
+            log.warn("Failed to write telemetry to InfluxDB", ex);
+        }
     }
 
     private TelemetryPayload parsePayload(String payload) {
         try {
-            JsonNode root = objectMapper.readTree(payload);
+            String jsonPayload = extractJson(payload);
+            JsonNode root = objectMapper.readTree(jsonPayload);
+            if (root.isTextual()) {
+                root = objectMapper.readTree(root.asText());
+            }
             String deviceId = textOrNull(root.get("device_id"));
             Integer count = intOrNull(root.get("count"));
             if (deviceId == null || deviceId.isBlank() || count == null) {
@@ -69,6 +77,15 @@ public class TelemetryStorageService {
             log.warn("Invalid telemetry payload: {}", payload);
             return null;
         }
+    }
+
+    private String extractJson(String payload) {
+        int start = payload.indexOf('{');
+        int end = payload.lastIndexOf('}');
+        if (start == -1 || end == -1 || end <= start) {
+            return payload;
+        }
+        return payload.substring(start, end + 1);
     }
 
     private String textOrNull(JsonNode node) {
