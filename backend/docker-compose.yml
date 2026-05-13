@@ -17,8 +17,25 @@ services:
       - INFLUX_BUCKET=${INFLUX_BUCKET}
       - INFLUX_TOKEN=${INFLUX_TOKEN}
     depends_on:
+      - postgres
       - kafka
       - influxdb
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
 
   mosquitto:

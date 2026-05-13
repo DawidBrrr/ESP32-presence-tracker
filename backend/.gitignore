@@ -5,6 +5,7 @@ influxdb/data/
 influxdb/config/
 kafka/data/
 zookeeper/data/
+postgres/data/
 
 # Node-RED runtime artifacts
 nodered/data/node_modules/
