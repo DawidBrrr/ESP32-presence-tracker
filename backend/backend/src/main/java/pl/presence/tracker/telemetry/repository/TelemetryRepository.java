@@ -1,4 +1,4 @@
-package pl.presence.tracker.Service;
+package pl.presence.tracker.telemetry.repository;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -12,12 +12,15 @@ import com.influxdb.client.write.Point;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 
-@Service
-public class TelemetryStorageService {
+import pl.presence.tracker.telemetry.model.TelemetryPoint;
 
-    private static final Logger log = LoggerFactory.getLogger(TelemetryStorageService.class);
+@Repository
+public class TelemetryRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(TelemetryRepository.class);
+    private static final String MEASUREMENT_NAME = "telemetry";
 
     private final InfluxDBClient influxDBClient;
     private final ObjectMapper objectMapper;
@@ -25,7 +28,7 @@ public class TelemetryStorageService {
     private final String influxBucket;
     private final String influxOrg;
 
-    public TelemetryStorageService(
+    public TelemetryRepository(
             InfluxDBClient influxDBClient,
             ObjectMapper objectMapper,
             @Value("${influx.bucket}") String influxBucket,
@@ -37,20 +40,20 @@ public class TelemetryStorageService {
         this.clock = Clock.systemUTC();
     }
 
-    public void handlePayload(String payload) {
+    public void savePayload(String payload) {
         if (payload == null || payload.isBlank()) {
             return;
         }
 
-        TelemetryPayload telemetry = parsePayload(payload);
+        TelemetryPoint telemetry = parsePayload(payload);
         if (telemetry == null) {
             return;
         }
 
-        Point point = Point.measurement("telemetry")
+        Point point = Point.measurement(MEASUREMENT_NAME)
                 .addTag("device_id", telemetry.deviceId())
                 .addField("count", telemetry.count())
-                .time(Instant.now(clock), WritePrecision.MS);
+                .time(telemetry.timestamp(), WritePrecision.MS);
 
         try {
             influxDBClient.getWriteApiBlocking().writePoint(influxBucket, influxOrg, point);
@@ -60,7 +63,7 @@ public class TelemetryStorageService {
         }
     }
 
-    private TelemetryPayload parsePayload(String payload) {
+    private TelemetryPoint parsePayload(String payload) {
         try {
             String jsonPayload = extractJson(payload);
             JsonNode root = objectMapper.readTree(jsonPayload);
@@ -72,7 +75,7 @@ public class TelemetryStorageService {
             if (deviceId == null || deviceId.isBlank() || count == null) {
                 return null;
             }
-            return new TelemetryPayload(deviceId, count);
+            return new TelemetryPoint(deviceId, count, Instant.now(clock));
         } catch (Exception ex) {
             log.warn("Invalid telemetry payload: {}", payload);
             return null;
@@ -111,8 +114,5 @@ public class TelemetryStorageService {
             }
         }
         return null;
-    }
-
-    private record TelemetryPayload(String deviceId, int count) {
     }
 }
