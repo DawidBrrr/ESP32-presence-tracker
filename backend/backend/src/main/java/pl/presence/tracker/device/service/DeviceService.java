@@ -29,12 +29,12 @@ public class DeviceService {
             throw new IllegalArgumentException("Invalid device token.");
         }
 
-        Optional<Device> existing = deviceRepository.findById(request.deviceId());
+        Optional<Device> existing = deviceRepository.findById(request.id());
         if (existing.isPresent()) {
             return new DeviceRegistrationResult(existing.get(), false);
         }
 
-        Device device = new Device(request.deviceId(), request.deviceId());
+        Device device = new Device(request.id(), request.id());
         return new DeviceRegistrationResult(deviceRepository.save(device), true);
     }
 
