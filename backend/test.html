@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>STOMP Test</title>
+    <!-- Pobranie bibliotek bezpośrednio z CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
+</head>
+<body>
+    <button onclick="connect()">Połącz i Subskrybuj</button>
+    <div id="messages"></div>
+
+    <script>
+        function connect() {
+            const token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2huIiwiaXNzIjoicHJlc2VuY2UtdHJhY2tlciIsImlhdCI6MTc3OTAyODQ2MCwiZXhwIjoxNzc5MDMyMDYwLCJ1aWQiOjEsImVtYWlsIjoiam9obkBleGFtcGxlLmNvbSJ9.RWC5lwExWLa6ZUzj2oSIR0CS8_zw_JTXblZ5NwZc5-A";
+            
+            const client = new StompJs.Client({
+                brokerURL: 'ws://localhost:8080/ws',
+                connectHeaders: {
+                    Authorization: 'Bearer ' + token
+                },
+                debug: function (str) {
+                    console.log(str);
+                },
+                onConnect: () => {
+                    document.getElementById('messages').innerHTML += '<p>Połączono!</p>';
+                    
+                    // Subskrypcja Twojego kanału
+                    client.subscribe('/user/queue/telemetry', (message) => {
+                        document.getElementById('messages').innerHTML += '<p>Odebrano: ' + message.body + '</p>';
+                    });
+                },
+                onStompError: (frame) => {
+                    console.error('Błąd STOMP: ' + frame.headers['message']);
+                }
+            });
+
+            client.activate();
+        }
+    </script>
+</body>
+</html>

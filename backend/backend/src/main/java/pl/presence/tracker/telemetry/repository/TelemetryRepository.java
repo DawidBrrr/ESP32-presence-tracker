@@ -2,12 +2,16 @@ package pl.presence.tracker.telemetry.repository;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.influxdb.client.InfluxDBClient;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
+import com.influxdb.query.FluxRecord;
+import com.influxdb.query.FluxTable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,14 +44,14 @@ public class TelemetryRepository {
         this.clock = Clock.systemUTC();
     }
 
-    public void savePayload(String payload) {
+    public Optional<TelemetryPoint> savePayload(String payload) {
         if (payload == null || payload.isBlank()) {
-            return;
+            return Optional.empty();
         }
 
         TelemetryPoint telemetry = parsePayload(payload);
         if (telemetry == null) {
-            return;
+            return Optional.empty();
         }
 
         Point point = Point.measurement(MEASUREMENT_NAME)
@@ -61,6 +65,39 @@ public class TelemetryRepository {
         } catch (Exception ex) {
             log.warn("Failed to write telemetry to InfluxDB", ex);
         }
+
+        return Optional.of(telemetry);
+    }
+
+    public Optional<TelemetryPoint> findLatest(String deviceId) {
+        if (deviceId == null || deviceId.isBlank()) {
+            return Optional.empty();
+        }
+
+        String sanitizedDeviceId = deviceId.replace("\"", "\\\"");
+        String flux = String.format(
+                "from(bucket: \"%s\") |> range(start: -30d) "
+                        + "|> filter(fn: (r) => r._measurement == \"%s\" "
+                        + "and r.device_id == \"%s\" and r._field == \"count\") "
+                        + "|> last()",
+                influxBucket, MEASUREMENT_NAME, sanitizedDeviceId);
+
+        try {
+            List<FluxTable> tables = influxDBClient.getQueryApi().query(flux, influxOrg);
+            for (FluxTable table : tables) {
+                for (FluxRecord record : table.getRecords()) {
+                    Instant timestamp = record.getTime();
+                    Integer count = intValueOrNull(record.getValue());
+                    if (timestamp != null && count != null) {
+                        return Optional.of(new TelemetryPoint(deviceId, count, timestamp));
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Failed to query latest telemetry for deviceId={}", deviceId, ex);
+        }
+
+        return Optional.empty();
     }
 
     private TelemetryPoint parsePayload(String payload) {
@@ -109,6 +146,23 @@ public class TelemetryRepository {
         if (node.isTextual()) {
             try {
                 return Integer.parseInt(node.asText().trim());
+            } catch (NumberFormatException ex) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Integer intValueOrNull(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text.trim());
             } catch (NumberFormatException ex) {
                 return null;
             }
