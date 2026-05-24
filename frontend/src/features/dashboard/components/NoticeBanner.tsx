@@ -9,14 +9,14 @@ type NoticeBannerProps = {
 
 const getNoticeStyles = (notice: Notice) => {
   if (notice.type === "error") {
-    return "border-red-500/40 bg-red-500/10 text-red-200";
+    return "border-red-500/40 text-red-100";
   }
 
   if (notice.type === "success") {
-    return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
+    return "border-emerald-500/40 text-emerald-100";
   }
 
-  return "border-slate-700 bg-slate-900/60 text-slate-200";
+  return "border-emerald-400/20 text-emerald-100/80";
 };
 
 export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
@@ -26,17 +26,17 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
 
   return (
     <div
-      className={`mt-6 flex items-center justify-between gap-4 rounded-xl border px-4 py-3 text-sm ${getNoticeStyles(
+      className={`panel mt-6 flex items-center justify-between gap-4 rounded-xl px-4 py-3 text-sm ${getNoticeStyles(
         notice
       )}`}
     >
       <span>{notice.message}</span>
       {onDismiss ? (
         <button
-          className="text-xs text-slate-300 transition hover:text-slate-100"
+          className="text-xs text-emerald-100/70 transition hover:text-emerald-100"
           onClick={onDismiss}
         >
-          Dismiss
+          Zamknij
         </button>
       ) : null}
     </div>

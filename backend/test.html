@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>STOMP Test</title>
-    <!-- Pobranie bibliotek bezpośrednio z CDN -->
+    <title>Presence Tracker</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%3E%3Cpath%20fill='%2316a34a'%20d='M12%203%201%2012h3v8a1%201%200%200%200%201%201h4a1%201%200%200%200%201-1v-8h3L12%203z'/%3E%3Cpath%20fill='%2316a34a'%20d='M9%2014h6v5H9z'/%3E%3C/svg%3E">
     <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.0.0/bundles/stomp.umd.min.js"></script>
 </head>
 <body>
-    <button onclick="connect()">Połącz i Subskrybuj</button>
+    <button onclick="connect()">Połącz</button>
     <div id="messages"></div>
 
     <script>

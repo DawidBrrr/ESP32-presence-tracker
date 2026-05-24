@@ -8,26 +8,36 @@ type WsStatus = "disconnected" | "connecting" | "connected" | "error";
 type ErrorHandler = (message: string) => void;
 
 export function useTelemetry(token: string, onError?: ErrorHandler) {
-  const [lastTelemetry, setLastTelemetry] = useState<Telemetry[]>([]);
+  const [latestTelemetryById, setLatestTelemetryById] = useState<
+    Record<string, Telemetry>
+  >({});
   const [liveTelemetry, setLiveTelemetry] = useState<Telemetry[]>([]);
   const [wsStatus, setWsStatus] = useState<WsStatus>("disconnected");
 
   const refreshLastTelemetry = useCallback(async () => {
     if (!token) {
-      setLastTelemetry([]);
+      setLatestTelemetryById({});
       return;
     }
 
     try {
       const data = await getLastTelemetry(token);
-      setLastTelemetry(data);
+      const nextMap: Record<string, Telemetry> = {};
+
+      data.forEach((item) => {
+        nextMap[item.id] = item;
+      });
+
+      setLatestTelemetryById(nextMap);
     } catch (error) {
-      onError?.((error as Error).message);
+      const message = (error as Error).message;
+      onError?.(message);
+      throw error;
     }
   }, [token, onError]);
 
   useEffect(() => {
-    void refreshLastTelemetry();
+    void refreshLastTelemetry().catch(() => undefined);
   }, [refreshLastTelemetry]);
 
   useEffect(() => {
@@ -41,7 +51,11 @@ export function useTelemetry(token: string, onError?: ErrorHandler) {
     const disconnect = connectTelemetry(
       token,
       (message) => {
-        setLiveTelemetry((current) => [message, ...current].slice(0, 10));
+        setLatestTelemetryById((current) => ({
+          ...current,
+          [message.id]: message
+        }));
+        setLiveTelemetry((current) => [message, ...current].slice(0, 12));
         setWsStatus("connected");
       },
       (message) => {
@@ -56,5 +70,5 @@ export function useTelemetry(token: string, onError?: ErrorHandler) {
     };
   }, [token, onError]);
 
-  return { lastTelemetry, liveTelemetry, wsStatus, refreshLastTelemetry };
+  return { latestTelemetryById, liveTelemetry, wsStatus, refreshLastTelemetry };
 }

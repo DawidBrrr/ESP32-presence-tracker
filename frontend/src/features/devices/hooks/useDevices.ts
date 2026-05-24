@@ -2,12 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   addUserDevice as addUserDeviceRequest,
   deleteUserDevice as deleteUserDeviceRequest,
-  getUserDevices,
-  registerDevice as registerDeviceRequest
+  getUserDevices
 } from "../../../services/http/devices";
 import type {
   Device,
-  DeviceRegistrationRequest,
   UserDeviceCreateRequest,
   UserDeviceCreateResponse
 } from "../../../types/api";
@@ -28,11 +26,6 @@ export function useDevices(token: string) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
-
-  const registerDevice = useCallback(
-    (payload: DeviceRegistrationRequest) => registerDeviceRequest(payload),
-    []
-  );
 
   const addUserDevice = useCallback(
     async (payload: UserDeviceCreateRequest): Promise<UserDeviceCreateResponse> => {
@@ -56,5 +49,5 @@ export function useDevices(token: string) {
     [token]
   );
 
-  return { devices, refresh, registerDevice, addUserDevice, removeUserDevice };
+  return { devices, refresh, addUserDevice, removeUserDevice };
 }

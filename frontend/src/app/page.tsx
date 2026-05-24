@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback } from "react";
-import { apiBaseUrl, wsBaseUrl } from "../config/env";
 import { AuthSection } from "../features/auth/components/AuthSection";
 import { useAuth } from "../features/auth/hooks/useAuth";
 import { DashboardHeader } from "../features/dashboard/components/DashboardHeader";
@@ -31,18 +30,22 @@ export default function Home() {
     [showNotice]
   );
 
-  const { devices, refresh, registerDevice, addUserDevice, removeUserDevice } =
+  const { devices, refresh, addUserDevice, removeUserDevice } =
     useDevices(token);
 
-  const { lastTelemetry, liveTelemetry, wsStatus, refreshLastTelemetry } =
+  const { latestTelemetryById, liveTelemetry, wsStatus, refreshLastTelemetry } =
     useTelemetry(token, handleTelemetryError);
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([refresh(), refreshLastTelemetry()]);
+  }, [refresh, refreshLastTelemetry]);
+
+  const isAuthenticated = Boolean(token);
+
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100">
+    <main className="app-shell">
       <div className="mx-auto max-w-6xl px-6 py-10">
         <DashboardHeader
-          apiBaseUrl={apiBaseUrl}
-          wsBaseUrl={wsBaseUrl}
           wsStatus={wsStatus}
           username={auth?.username}
           onLogout={logout}
@@ -50,28 +53,32 @@ export default function Home() {
 
         <NoticeBanner notice={notice} onDismiss={clearNotice} />
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <AuthSection
-            onRegister={register}
-            onLogin={login}
-            onNotice={handleNotice}
-          />
-          <DeviceSection
-            token={token}
-            devices={devices}
-            onRegisterDevice={registerDevice}
-            onAddUserDevice={addUserDevice}
-            onDeleteDevice={removeUserDevice}
-            onRefresh={refresh}
-            onNotice={handleNotice}
-          />
-        </div>
-
-        <TelemetrySection
-          lastTelemetry={lastTelemetry}
-          liveTelemetry={liveTelemetry}
-          onRefresh={refreshLastTelemetry}
-        />
+        {isAuthenticated ? (
+          <div className="mt-10 grid gap-6 lg:grid-cols-[2.2fr,1fr]">
+            <div className="grid gap-6 animate-fade-up">
+              <DeviceSection
+                token={token}
+                devices={devices}
+                presenceById={latestTelemetryById}
+                onAddUserDevice={addUserDevice}
+                onDeleteDevice={removeUserDevice}
+                onRefresh={refreshAll}
+                onNotice={handleNotice}
+              />
+            </div>
+            <div className="animate-fade-up delay-1">
+              <TelemetrySection liveTelemetry={liveTelemetry} wsStatus={wsStatus} />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-10 animate-fade-up">
+            <AuthSection
+              onRegister={register}
+              onLogin={login}
+              onNotice={handleNotice}
+            />
+          </div>
+        )}
       </div>
     </main>
   );

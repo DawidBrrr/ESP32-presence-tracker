@@ -4,8 +4,130 @@
 
 :root {
   color-scheme: dark;
+  --bg-0: #050807;
+  --bg-1: #0b1411;
+  --panel: rgba(8, 20, 16, 0.78);
+  --panel-border: rgba(75, 255, 177, 0.16);
+  --accent: #44f5a8;
+  --accent-strong: #6bffd0;
+  --text: #e8fff6;
+  --muted: #9cc9b7;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  font-family: "Sora", "Space Grotesk", "Manrope", "Segoe UI", sans-serif;
+  background-color: var(--bg-0);
+  color: var(--text);
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(
+      900px 700px at 85% -10%,
+      rgba(68, 245, 168, 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      700px 500px at 5% 10%,
+      rgba(0, 215, 255, 0.12),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #050807 0%, #060c0a 55%, #050807 100%);
+  overflow: hidden;
+}
+
+.app-shell::before {
+  content: "";
+  position: absolute;
+  inset: -20% 0 0 0;
+  background-image: linear-gradient(
+      rgba(68, 245, 168, 0.07) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(68, 245, 168, 0.05) 1px, transparent 1px);
+  background-size: 52px 52px;
+  opacity: 0.35;
+  pointer-events: none;
+  mask-image: radial-gradient(circle at 50% 0%, black 35%, transparent 70%);
+}
+
+.app-shell::after {
+  content: "";
+  position: absolute;
+  inset: auto -20% -35% -20%;
+  height: 380px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(68, 245, 168, 0.3),
+    transparent 70%
+  );
+  filter: blur(45px);
+  pointer-events: none;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(68, 245, 168, 0.08) inset;
+  backdrop-filter: blur(18px);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  background: currentColor;
+  box-shadow: 0 0 16px currentColor;
+}
+
+.glow-text {
+  text-shadow: 0 0 22px rgba(68, 245, 168, 0.5);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(68, 245, 168, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 24px rgba(68, 245, 168, 0.65);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.75s ease-out both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.8s ease-in-out infinite;
+}
+
+.delay-1 {
+  animation-delay: 0.1s;
+}
+
+.delay-2 {
+  animation-delay: 0.2s;
+}
+
+.delay-3 {
+  animation-delay: 0.3s;
 }

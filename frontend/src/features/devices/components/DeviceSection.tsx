@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { buttonStyles, inputStyles } from "../../../components/ui/styles";
+import { HomeIcon } from "../../../components/ui/Icons";
+import {
+  buttonGhostStyles,
+  buttonStyles,
+  inputStyles
+} from "../../../components/ui/styles";
 import type {
   Device,
-  DeviceRegistrationRequest,
+  Telemetry,
   UserDeviceCreateRequest,
   UserDeviceCreateResponse
 } from "../../../types/api";
@@ -13,7 +18,7 @@ import type { Notice } from "../../../types/ui";
 type DeviceSectionProps = {
   token: string;
   devices: Device[];
-  onRegisterDevice: (payload: DeviceRegistrationRequest) => Promise<Device>;
+  presenceById: Record<string, Telemetry | undefined>;
   onAddUserDevice: (
     payload: UserDeviceCreateRequest
   ) => Promise<UserDeviceCreateResponse>;
@@ -22,41 +27,35 @@ type DeviceSectionProps = {
   onNotice: (notice: Notice) => void;
 };
 
+const formatTimestamp = (timestamp?: string) => {
+  if (!timestamp) {
+    return "Brak danych";
+  }
+
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return timestamp;
+  }
+
+  return date.toLocaleString();
+};
+
 export function DeviceSection({
   token,
   devices,
-  onRegisterDevice,
+  presenceById,
   onAddUserDevice,
   onDeleteDevice,
   onRefresh,
   onNotice
 }: DeviceSectionProps) {
-  const [deviceRegForm, setDeviceRegForm] = useState({ id: "", token: "" });
   const [userDeviceForm, setUserDeviceForm] = useState({ id: "" });
   const [busy, setBusy] = useState(false);
-
-  const handleRegisterDevice = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setBusy(true);
-
-    try {
-      const device = await onRegisterDevice(deviceRegForm);
-      onNotice({
-        type: "success",
-        message: `Device registered: ${device.name}`
-      });
-      setDeviceRegForm({ id: "", token: "" });
-    } catch (error) {
-      onNotice({ type: "error", message: (error as Error).message });
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const handleAddUserDevice = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) {
-      onNotice({ type: "error", message: "Login required." });
+      onNotice({ type: "error", message: "Zaloguj się, aby dodać urządzenie." });
       return;
     }
 
@@ -66,7 +65,7 @@ export function DeviceSection({
       await onAddUserDevice(userDeviceForm);
       setUserDeviceForm({ id: "" });
       await onRefresh();
-      onNotice({ type: "success", message: "Device linked." });
+      onNotice({ type: "success", message: "Urządzenie zostało dodane." });
     } catch (error) {
       onNotice({ type: "error", message: (error as Error).message });
     } finally {
@@ -76,7 +75,7 @@ export function DeviceSection({
 
   const handleDeleteDevice = async (id: string) => {
     if (!token) {
-      onNotice({ type: "error", message: "Login required." });
+      onNotice({ type: "error", message: "Zaloguj się, aby usunąć urządzenie." });
       return;
     }
 
@@ -85,7 +84,7 @@ export function DeviceSection({
     try {
       await onDeleteDevice(id);
       await onRefresh();
-      onNotice({ type: "success", message: "Device removed." });
+      onNotice({ type: "success", message: "Urządzenie zostało usunięte." });
     } catch (error) {
       onNotice({ type: "error", message: (error as Error).message });
     } finally {
@@ -95,7 +94,7 @@ export function DeviceSection({
 
   const handleRefresh = async () => {
     if (!token) {
-      onNotice({ type: "error", message: "Login required." });
+      onNotice({ type: "error", message: "Zaloguj się, aby odświeżyć dane." });
       return;
     }
 
@@ -111,91 +110,96 @@ export function DeviceSection({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-      <h2 className="text-lg font-semibold">Devices</h2>
-      <div className="mt-4 grid gap-6">
-        <form className="grid gap-3" onSubmit={handleRegisterDevice}>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Register device (token based)
-          </h3>
-          <input
-            className={inputStyles}
-            placeholder="Device id"
-            value={deviceRegForm.id}
-            onChange={(event) =>
-              setDeviceRegForm((current) => ({
-                ...current,
-                id: event.target.value
-              }))
-            }
-          />
-          <input
-            className={inputStyles}
-            placeholder="Registration token"
-            value={deviceRegForm.token}
-            onChange={(event) =>
-              setDeviceRegForm((current) => ({
-                ...current,
-                token: event.target.value
-              }))
-            }
-          />
-          <button className={buttonStyles} disabled={busy}>
-            Register device
-          </button>
-        </form>
+    <section className="panel rounded-3xl p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-emerald-50">
+            Twoje pomieszczenia
+          </h2>
+          <p className="mt-2 text-sm text-emerald-100/70">
+            Dane aktualizowane w czasie rzeczywistym.
+          </p>
+        </div>
+        <button
+          className={buttonGhostStyles}
+          disabled={busy || !token}
+          onClick={handleRefresh}
+        >
+          Odśwież dane
+        </button>
+      </div>
 
-        <form className="grid gap-3" onSubmit={handleAddUserDevice}>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-            Link device to user
-          </h3>
-          <input
-            className={inputStyles}
-            placeholder="Device id"
-            value={userDeviceForm.id}
-            onChange={(event) =>
-              setUserDeviceForm({ id: event.target.value })
-            }
-          />
-          <button className={buttonStyles} disabled={busy || !token}>
-            Link device
-          </button>
-        </form>
+      <form
+        className="mt-6 grid gap-3 sm:grid-cols-[1fr,auto]"
+        onSubmit={handleAddUserDevice}
+      >
+        <input
+          className={inputStyles}
+          placeholder="Identyfikator urządzenia"
+          value={userDeviceForm.id}
+          onChange={(event) =>
+            setUserDeviceForm({ id: event.target.value })
+          }
+        />
+        <button className={buttonStyles} disabled={busy || !token}>
+          Dodaj urządzenie
+        </button>
+      </form>
 
-        <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Your devices
-            </h3>
-            <button
-              className={buttonStyles}
-              disabled={busy || !token}
-              onClick={handleRefresh}
-            >
-              Refresh
-            </button>
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        {devices.length === 0 ? (
+          <div className="col-span-full rounded-2xl border border-emerald-500/15 bg-[#08120f]/70 p-6 text-sm text-emerald-100/70">
+            Brak urządzeń. Dodaj pierwsze pomieszczenie, aby rozpocząć.
           </div>
-          <div className="mt-3 grid gap-2 text-sm text-slate-300">
-            {devices.length === 0 ? (
-              <span>No devices linked.</span>
-            ) : (
-              devices.map((device) => (
-                <div
-                  key={device.id}
-                  className="flex items-center justify-between rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-                >
-                  <span>{device.name}</span>
+        ) : (
+          devices.map((device) => {
+            const telemetry = presenceById[device.id];
+            const countLabel = telemetry ? String(telemetry.count) : "--";
+            const countText = telemetry ? "osób" : "brak danych";
+
+            return (
+              <div
+                key={device.id}
+                className="group relative overflow-hidden rounded-2xl border border-emerald-500/15 bg-[#08120f]/80 p-4 transition hover:border-emerald-400/50"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <HomeIcon className="h-6 w-6 text-emerald-300" />
+                    </div>
+                    <div>
+                      <div className="text-xs uppercase tracking-[0.25em] text-emerald-100/60">
+                        Pokój
+                      </div>
+                      <div className="text-lg font-semibold text-emerald-50">
+                        {device.name}
+                      </div>
+                    </div>
+                  </div>
                   <button
-                    className="text-xs text-red-300 hover:text-red-200"
+                    className="text-xs text-red-200/80 transition hover:text-red-200"
                     onClick={() => handleDeleteDevice(device.id)}
                   >
-                    Remove
+                    Usuń
                   </button>
                 </div>
-              ))
-            )}
-          </div>
-        </div>
+
+                <div className="mt-4">
+                  <div className="text-3xl font-semibold text-emerald-200 glow-text">
+                    {countLabel}
+                  </div>
+                  <div className="text-xs uppercase tracking-[0.3em] text-emerald-100/60">
+                    {countText}
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs text-emerald-100/60">
+                  Ostatnia aktualizacja: {formatTimestamp(telemetry?.timestamp)}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </section>
   );

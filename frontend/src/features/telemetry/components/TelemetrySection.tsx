@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { buttonStyles } from "../../../components/ui/styles";
+import { PulseIcon } from "../../../components/ui/Icons";
 import type { Telemetry } from "../../../types/api";
 
 type TelemetrySectionProps = {
-  lastTelemetry: Telemetry[];
   liveTelemetry: Telemetry[];
-  onRefresh: () => Promise<void>;
+  wsStatus: string;
+};
+
+const statusMap: Record<string, { label: string; color: string }> = {
+  connected: { label: "Połączono", color: "text-emerald-400" },
+  connecting: { label: "Łączenie", color: "text-amber-300" },
+  error: { label: "Błąd", color: "text-red-400" },
+  disconnected: { label: "Rozłączono", color: "text-slate-400" }
 };
 
 const formatTimestamp = (timestamp: string) => {
@@ -16,73 +21,61 @@ const formatTimestamp = (timestamp: string) => {
     return timestamp;
   }
 
-  return date.toLocaleString();
+  return date.toLocaleTimeString();
 };
 
 export function TelemetrySection({
-  lastTelemetry,
   liveTelemetry,
-  onRefresh
+  wsStatus
 }: TelemetrySectionProps) {
-  const [busy, setBusy] = useState(false);
-
-  const handleRefresh = async () => {
-    setBusy(true);
-    try {
-      await onRefresh();
-    } finally {
-      setBusy(false);
-    }
-  };
+  const status = statusMap[wsStatus] ?? statusMap.disconnected;
 
   return (
-    <div className="mt-8 grid gap-6 lg:grid-cols-2">
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Last telemetry</h2>
-          <button className={buttonStyles} disabled={busy} onClick={handleRefresh}>
-            Refresh
-          </button>
+    <section className="panel h-fit rounded-3xl p-6 lg:sticky lg:top-10">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] text-emerald-200/70">
+            <PulseIcon className="h-4 w-4 text-emerald-300" />
+            Logi na żywo
+          </div>
+          <p className="mt-2 text-sm text-emerald-100/70">
+            Historia aktualizacji z urządzeń.
+          </p>
         </div>
-        <div className="mt-4 grid gap-3 text-sm text-slate-300">
-          {lastTelemetry.length === 0 ? (
-            <span>No telemetry yet.</span>
-          ) : (
-            lastTelemetry.map((item) => (
-              <div
-                key={`${item.id}-${item.timestamp}`}
-                className="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-              >
-                <div className="text-slate-200">{item.id}</div>
-                <div className="text-xs text-slate-400">
-                  Count: {item.count} | {formatTimestamp(item.timestamp)}
-                </div>
-              </div>
-            ))
-          )}
+        <div className="flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-100">
+          <span className={`status-dot ${status.color}`} />
+          {status.label}
         </div>
-      </section>
+      </div>
 
-      <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
-        <h2 className="text-lg font-semibold">Live telemetry (WS)</h2>
-        <div className="mt-4 grid gap-3 text-sm text-slate-300">
-          {liveTelemetry.length === 0 ? (
-            <span>No live messages yet.</span>
-          ) : (
-            liveTelemetry.map((item) => (
-              <div
-                key={`${item.id}-${item.timestamp}-live`}
-                className="rounded-lg border border-slate-800 bg-slate-900/60 px-3 py-2"
-              >
-                <div className="text-slate-200">{item.id}</div>
-                <div className="text-xs text-slate-400">
-                  Count: {item.count} | {formatTimestamp(item.timestamp)}
-                </div>
+      <div className="mt-5 max-h-[360px] space-y-3 overflow-auto pr-1">
+        {liveTelemetry.length === 0 ? (
+          <div className="rounded-2xl border border-emerald-500/15 bg-[#08120f]/70 p-4 text-sm text-emerald-100/60">
+            Czekam na aktualizacje z urządzeń.
+          </div>
+        ) : (
+          liveTelemetry.map((item) => (
+            <div
+              key={`${item.id}-${item.timestamp}-live`}
+              className="rounded-2xl border border-emerald-500/15 bg-[#08120f]/70 p-3"
+            >
+              <div className="flex items-center justify-between text-xs text-emerald-100/70">
+                <span className="flex items-center gap-2">
+                  <PulseIcon className="h-3.5 w-3.5 text-emerald-300" />
+                  {item.id}
+                </span>
+                <span>{formatTimestamp(item.timestamp)}</span>
               </div>
-            ))
-          )}
-        </div>
-      </section>
-    </div>
+              <div className="mt-2 text-2xl font-semibold text-emerald-200 glow-text">
+                {item.count}
+              </div>
+              <div className="text-xs uppercase tracking-[0.3em] text-emerald-100/60">
+                osób
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }
