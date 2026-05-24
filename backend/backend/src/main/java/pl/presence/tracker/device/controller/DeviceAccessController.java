@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.presence.tracker.device.dto.DeviceAccessRequest;
 import pl.presence.tracker.device.dto.DeviceAccessResponse;
 import pl.presence.tracker.device.dto.DeviceLastTelemetryResponse;
+import pl.presence.tracker.device.dto.DeviceSummaryResponse;
 import pl.presence.tracker.device.dto.ErrorResponse;
 import pl.presence.tracker.device.service.DeviceAccessService;
 import pl.presence.tracker.device.service.DeviceAccessService.DeviceAccessResult;
@@ -77,6 +78,17 @@ public class DeviceAccessController {
         }
 
         List<DeviceLastTelemetryResponse> result = deviceAccessService.getLatestTelemetry(principal.userId());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getDevices(@AuthenticationPrincipal JwtPrincipal principal) {
+        if (principal == null || principal.userId() == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(new ErrorResponse("Invalid token."));
+        }
+
+        List<DeviceSummaryResponse> result = deviceAccessService.getDevices(principal.userId());
         return ResponseEntity.ok(result);
     }
 }

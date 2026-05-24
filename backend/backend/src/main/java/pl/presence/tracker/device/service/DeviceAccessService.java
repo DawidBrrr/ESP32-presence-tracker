@@ -2,11 +2,15 @@ package pl.presence.tracker.device.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import pl.presence.tracker.device.dto.DeviceLastTelemetryResponse;
+import pl.presence.tracker.device.dto.DeviceSummaryResponse;
+import pl.presence.tracker.device.model.Device;
 import pl.presence.tracker.device.model.UserDeviceAccess;
 import pl.presence.tracker.device.repository.DeviceRepository;
 import pl.presence.tracker.device.repository.UserDeviceAccessRepository;
@@ -53,6 +57,31 @@ public class DeviceAccessService {
             telemetryRepository.findLatest(access.getDeviceId())
                     .map(DeviceLastTelemetryResponse::from)
                     .ifPresent(result::add);
+        }
+        return result;
+    }
+
+    public List<DeviceSummaryResponse> getDevices(Long userId) {
+        List<UserDeviceAccess> accessList = accessRepository.findByUserId(userId);
+        if (accessList.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> deviceIds = accessList.stream()
+                .map(UserDeviceAccess::getDeviceId)
+                .distinct()
+                .toList();
+
+        List<Device> devices = deviceRepository.findAllById(deviceIds);
+        Map<String, Device> byId = devices.stream()
+                .collect(Collectors.toMap(Device::getId, device -> device));
+
+        List<DeviceSummaryResponse> result = new ArrayList<>();
+        for (String deviceId : deviceIds) {
+            Device device = byId.get(deviceId);
+            if (device != null) {
+                result.add(DeviceSummaryResponse.from(device));
+            }
         }
         return result;
     }

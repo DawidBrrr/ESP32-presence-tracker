@@ -1,35 +1,77 @@
+"use client";
+
+import { useCallback } from "react";
+import { apiBaseUrl, wsBaseUrl } from "../config/env";
+import { AuthSection } from "../features/auth/components/AuthSection";
+import { useAuth } from "../features/auth/hooks/useAuth";
+import { DashboardHeader } from "../features/dashboard/components/DashboardHeader";
+import { NoticeBanner } from "../features/dashboard/components/NoticeBanner";
+import { useNotice } from "../features/dashboard/hooks/useNotice";
+import { DeviceSection } from "../features/devices/components/DeviceSection";
+import { useDevices } from "../features/devices/hooks/useDevices";
+import { TelemetrySection } from "../features/telemetry/components/TelemetrySection";
+import { useTelemetry } from "../features/telemetry/hooks/useTelemetry";
+import type { Notice } from "../types/ui";
+
 export default function Home() {
+  const { notice, showNotice, pushNotice, clearNotice } = useNotice();
+  const { auth, token, register, login, logout } = useAuth();
+
+  const handleNotice = useCallback(
+    (nextNotice: Notice) => {
+      pushNotice(nextNotice);
+    },
+    [pushNotice]
+  );
+
+  const handleTelemetryError = useCallback(
+    (message: string) => {
+      showNotice("error", message);
+    },
+    [showNotice]
+  );
+
+  const { devices, refresh, registerDevice, addUserDevice, removeUserDevice } =
+    useDevices(token);
+
+  const { lastTelemetry, liveTelemetry, wsStatus, refreshLastTelemetry } =
+    useTelemetry(token, handleTelemetryError);
+
   return (
     <main className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="mx-auto max-w-4xl px-6 py-20">
-        <div className="inline-flex items-center rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1 text-xs text-slate-300">
-          Next.js + Tailwind starter
+      <div className="mx-auto max-w-6xl px-6 py-10">
+        <DashboardHeader
+          apiBaseUrl={apiBaseUrl}
+          wsBaseUrl={wsBaseUrl}
+          wsStatus={wsStatus}
+          username={auth?.username}
+          onLogout={logout}
+        />
+
+        <NoticeBanner notice={notice} onDismiss={clearNotice} />
+
+        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+          <AuthSection
+            onRegister={register}
+            onLogin={login}
+            onNotice={handleNotice}
+          />
+          <DeviceSection
+            token={token}
+            devices={devices}
+            onRegisterDevice={registerDevice}
+            onAddUserDevice={addUserDevice}
+            onDeleteDevice={removeUserDevice}
+            onRefresh={refresh}
+            onNotice={handleNotice}
+          />
         </div>
-        <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
-          ESP32 Presence Tracker
-        </h1>
-        <p className="mt-4 text-lg text-slate-300">
-          Replace this copy with your product message. This template ships with
-          App Router, TypeScript, Tailwind, and a production-ready Dockerfile.
-        </p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Real-time signals
-            </h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Connect sensor data streams and render presence in seconds.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">
-              Deploy anywhere
-            </h2>
-            <p className="mt-2 text-sm text-slate-300">
-              Docker build outputs a small runtime image ready for production.
-            </p>
-          </div>
-        </div>
+
+        <TelemetrySection
+          lastTelemetry={lastTelemetry}
+          liveTelemetry={liveTelemetry}
+          onRefresh={refreshLastTelemetry}
+        />
       </div>
     </main>
   );
