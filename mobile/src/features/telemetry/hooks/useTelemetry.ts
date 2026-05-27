@@ -61,6 +61,12 @@ export function useTelemetry(token: string, onError?: ErrorHandler) {
       (message) => {
         setWsStatus("error");
         onError?.(message);
+      },
+      () => {
+        setWsStatus("connected");
+      },
+      () => {
+        setWsStatus("disconnected");
       }
     );
 

@@ -1,3 +1,4 @@
+import { TextDecoder, TextEncoder } from "fast-text-encoding";
 import { LinearGradient } from "expo-linear-gradient";
 import { useCallback } from "react";
 import {
@@ -18,6 +19,19 @@ import { TelemetrySection } from "./src/features/telemetry/components/TelemetryS
 import { useTelemetry } from "./src/features/telemetry/hooks/useTelemetry";
 import { colors } from "./src/styles/theme";
 import type { Notice } from "./src/types/ui";
+
+const globalText = globalThis as typeof globalThis & {
+  TextEncoder?: typeof TextEncoder;
+  TextDecoder?: typeof TextDecoder;
+};
+
+if (!globalText.TextEncoder) {
+  globalText.TextEncoder = TextEncoder;
+}
+
+if (!globalText.TextDecoder) {
+  globalText.TextDecoder = TextDecoder;
+}
 
 export default function App() {
   const { notice, showNotice, pushNotice, clearNotice } = useNotice();
