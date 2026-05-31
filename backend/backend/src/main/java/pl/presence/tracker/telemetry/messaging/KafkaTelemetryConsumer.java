@@ -18,7 +18,7 @@ public class KafkaTelemetryConsumer {
         this.telemetryBroadcastService = telemetryBroadcastService;
     }
 
-    @KafkaListener(topics = "${kafka.telemetry-topic}")
+    @KafkaListener(topics = "${kafka.telemetry-topic}", concurrency = "10")
     public void onMessage(String payload) {
         telemetryRepository.savePayload(payload)
                 .ifPresent(telemetryBroadcastService::broadcast);

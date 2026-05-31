@@ -8,6 +8,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.influxdb.client.InfluxDBClient;
+import com.influxdb.client.WriteApi;
 import com.influxdb.client.domain.WritePrecision;
 import com.influxdb.client.write.Point;
 import com.influxdb.query.FluxRecord;
@@ -27,6 +28,7 @@ public class TelemetryRepository {
     private static final String MEASUREMENT_NAME = "telemetry";
 
     private final InfluxDBClient influxDBClient;
+    private final WriteApi writeApi;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final String influxBucket;
@@ -34,10 +36,12 @@ public class TelemetryRepository {
 
     public TelemetryRepository(
             InfluxDBClient influxDBClient,
+            WriteApi writeApi,
             ObjectMapper objectMapper,
             @Value("${influx.bucket}") String influxBucket,
             @Value("${influx.org}") String influxOrg) {
         this.influxDBClient = influxDBClient;
+        this.writeApi = writeApi;
         this.objectMapper = objectMapper;
         this.influxBucket = influxBucket;
         this.influxOrg = influxOrg;
@@ -60,8 +64,8 @@ public class TelemetryRepository {
                 .time(telemetry.timestamp(), WritePrecision.MS);
 
         try {
-            influxDBClient.getWriteApiBlocking().writePoint(influxBucket, influxOrg, point);
-            log.info("Saved telemetry: deviceId={}, count={}", telemetry.deviceId(), telemetry.count());
+            writeApi.writePoint(point);
+            log.info("Queued telemetry write: deviceId={}, count={}", telemetry.deviceId(), telemetry.count());
         } catch (Exception ex) {
             log.warn("Failed to write telemetry to InfluxDB", ex);
         }

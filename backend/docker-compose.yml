@@ -1,3 +1,10 @@
+x-nodered-base: &nodered-base
+  image: nodered/node-red:3.1.10
+  depends_on:
+    - mosquitto
+    - kafka
+  restart: unless-stopped
+
 services:
   backend:
     build:
@@ -48,18 +55,6 @@ services:
       - ./Mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
     restart: unless-stopped
 
-  nodered:
-    image: nodered/node-red:3.1.10
-    container_name: nodered
-    ports:
-      - "1880:1880"
-    volumes:
-      - ./nodered/data:/data
-    depends_on:
-      - mosquitto
-      - kafka
-    restart: unless-stopped
-
   kafka:
     image: apache/kafka:3.7.0
     container_name: kafka
@@ -79,10 +74,27 @@ services:
       - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=${KAFKA_TRANSACTION_STATE_LOG_MIN_ISR}
       - KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS=${KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS}
       - KAFKA_AUTO_CREATE_TOPICS_ENABLE=${KAFKA_AUTO_CREATE_TOPICS_ENABLE}
+      - KAFKA_NUM_PARTITIONS=${KAFKA_NUM_PARTITIONS}
+      - KAFKA_LOG_RETENTION_HOURS=${KAFKA_LOG_RETENTION_HOURS}
       - KAFKA_LOG_DIRS=${KAFKA_LOG_DIRS}
     volumes:
       - ./kafka/data:/var/lib/kafka/data
     restart: unless-stopped
+
+  kafka-init:
+    image: apache/kafka:3.7.0
+    depends_on:
+      - kafka
+    entrypoint: ["/bin/bash", "-c"]
+    command: >
+      until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1;
+      do echo "Waiting for Kafka..."; sleep 2; done;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$KAFKA_TELEMETRY_TOPIC" --partitions "$KAFKA_NUM_PARTITIONS" --replication-factor 1;
+      /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --alter --topic "$KAFKA_TELEMETRY_TOPIC" --partitions "$KAFKA_NUM_PARTITIONS";
+    environment:
+      - KAFKA_TELEMETRY_TOPIC=${KAFKA_TELEMETRY_TOPIC}
+      - KAFKA_NUM_PARTITIONS=${KAFKA_NUM_PARTITIONS}
+    restart: "no"
 
   influxdb:
     image: influxdb:2.7
@@ -102,3 +114,23 @@ services:
       - ./influxdb/data:/var/lib/influxdb2
       - ./influxdb/config:/etc/influxdb2
     restart: unless-stopped
+
+  nodered-1:
+    <<: *nodered-base
+    container_name: nodered-1
+    ports:
+      - "1880:1880"
+    volumes:
+      - ./nodered/data:/data
+
+  nodered-2:
+    <<: *nodered-base
+    container_name: nodered-2
+    volumes:
+      - ./nodered/data-2:/data
+
+  nodered-3:
+    <<: *nodered-base
+    container_name: nodered-3
+    volumes:
+      - ./nodered/data-3:/data
