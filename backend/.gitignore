@@ -25,3 +25,9 @@ nodered/data-2/.npm/
 nodered/data-2/.npm/_logs/
 nodered/data-2/*.log
 nodered/data-2/*.backup
+
+nodered/data-3/node_modules/
+nodered/data-3/.npm/
+nodered/data-3/.npm/_logs/
+nodered/data-3/*.log
+nodered/data-3/*.backup
