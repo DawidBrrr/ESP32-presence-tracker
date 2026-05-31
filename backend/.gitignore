@@ -13,3 +13,15 @@ nodered/data/.npm/
 nodered/data/.npm/_logs/
 nodered/data/*.log
 nodered/data/*.backup
+
+nodered/data-1/node_modules/
+nodered/data-1/.npm/
+nodered/data-1/.npm/_logs/
+nodered/data-1/*.log
+nodered/data-1/*.backup
+
+nodered/data-2/node_modules/
+nodered/data-2/.npm/
+nodered/data-2/.npm/_logs/
+nodered/data-2/*.log
+nodered/data-2/*.backup
