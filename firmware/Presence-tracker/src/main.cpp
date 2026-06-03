@@ -10,7 +10,7 @@ const unsigned long SEQUENCE_TIMEOUT_MS = 2000;
 
 const char* WIFI_SSID = "Pk_internet";
 const char* WIFI_PASSWORD = "123456789";
-const char* MQTT_BROKER = "192.168.1.8";
+const char* MQTT_BROKER = "10.225.155.155";
 const uint16_t MQTT_PORT = 1883;
 const char* MQTT_TOPIC = "telemetry";
 const char* DEVICE_ID = "esp32-test001";
