@@ -86,7 +86,7 @@ services:
     depends_on:
       - kafka
     entrypoint: ["/bin/bash", "-c"]
-    command: >
+    command: |
       until /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --list > /dev/null 2>&1;
       do echo "Waiting for Kafka..."; sleep 2; done;
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic "$KAFKA_TELEMETRY_TOPIC" --partitions "$KAFKA_NUM_PARTITIONS" --replication-factor 1;
@@ -134,3 +134,65 @@ services:
     container_name: nodered-3
     volumes:
       - ./nodered/data-3:/data
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    ports:
+      - "9080:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: grafana
+    ports:
+      - "3100:3000"
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  telegraf:
+    image: telegraf:1.31-alpine
+    container_name: telegraf
+    ports:
+      - "9273:9273"
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    user: root
+    entrypoint: ["telegraf"]
+    restart: unless-stopped
+
+  mosquitto-exporter:
+    image: sapcc/mosquitto-exporter:latest
+    container_name: mosquitto-exporter
+    ports:
+      - "9234:9234"
+    environment:
+      - BROKER_ENDPOINT=tcp://mosquitto:1883
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter
+    command: ["--kafka.server=kafka:9092"]
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka
+    restart: unless-stopped

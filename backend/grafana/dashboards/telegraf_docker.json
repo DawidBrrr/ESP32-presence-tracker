@@ -1,0 +1,91 @@
+{
+  "title": "Telegraf Docker Containers",
+  "templating": {
+    "list": [
+      {
+        "name": "container",
+        "type": "query",
+        "datasource": {"type": "prometheus", "uid": "prometheus"},
+        "query": "label_values(docker_container_cpu_usage_percent, container_name)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "CPU Usage (%)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "docker_container_cpu_usage_percent{container_name=~\"$container\"}",
+          "legendFormat": "{{container_name}} CPU",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Usage (MB)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "docker_container_mem_usage{container_name=~\"$container\"} / 1048576",
+          "legendFormat": "{{container_name}} RAM",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Network Rx (MB/sec)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "rate(docker_container_net_rx_bytes{container_name=~\"$container\"}[1m]) / 1048576",
+          "legendFormat": "{{container_name}} Net Rx",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Network Tx (MB/sec)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "rate(docker_container_net_tx_bytes{container_name=~\"$container\"}[1m]) / 1048576",
+          "legendFormat": "{{container_name}} Net Tx",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk I/O Write Speed (MB/sec)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "targets": [
+        {
+          "expr": "rate(docker_container_blkio_io_service_bytes_recursive_write{container_name=~\"$container\"}[1m]) / 1048576",
+          "legendFormat": "{{container_name}} Disk Write",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Disk I/O Read Speed (MB/sec)",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "targets": [
+        {
+          "expr": "rate(docker_container_blkio_io_service_bytes_recursive_read{container_name=~\"$container\"}[1m]) / 1048576",
+          "legendFormat": "{{container_name}} Disk Read",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39
+}

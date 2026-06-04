@@ -1,0 +1,54 @@
+{
+  "title": "Mosquitto Broker",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Messages Received / sec",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(broker_messages_received[1m])",
+          "legendFormat": "Received",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Messages Sent / sec",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "expr": "rate(broker_messages_sent[1m])",
+          "legendFormat": "Sent",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Messages Stored (Queue)",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "broker_store_messages_count",
+          "legendFormat": "Queued",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Active Clients",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+      "targets": [
+        {
+          "expr": "broker_clients_connected",
+          "legendFormat": "Clients",
+          "datasource": {"type": "prometheus", "uid": "prometheus"}
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39
+}
