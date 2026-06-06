@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
@@ -10,17 +10,40 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     return stored ? (JSON.parse(stored) as T) : initialValue;
   });
 
+  const setItem = useCallback((newValue: T | ((val: T) => T)) => {
+    setValue((currentValue) => {
+      const resolvedValue = newValue instanceof Function ? newValue(currentValue) : newValue;
+      
+      if (typeof window !== "undefined") {
+        if (resolvedValue === null || resolvedValue === undefined) {
+          window.localStorage.removeItem(key);
+        } else {
+          window.localStorage.setItem(key, JSON.stringify(resolvedValue));
+        }
+        window.dispatchEvent(new Event("local-storage-" + key));
+      }
+      
+      return resolvedValue;
+    });
+  }, [key]);
+
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
-    if (value === null || value === undefined) {
-      window.localStorage.removeItem(key);
-    } else {
-      window.localStorage.setItem(key, JSON.stringify(value));
-    }
-  }, [key, value]);
+    const handleStorageChange = () => {
+      const stored = window.localStorage.getItem(key);
+      setValue(stored ? (JSON.parse(stored) as T) : initialValue);
+    };
 
-  return [value, setValue] as const;
+    const eventName = "local-storage-" + key;
+    window.addEventListener(eventName, handleStorageChange);
+    window.addEventListener("storage", handleStorageChange); // for cross-tab sync
+
+    return () => {
+      window.removeEventListener(eventName, handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [key, initialValue]);
+
+  return [value, setItem] as const;
 }

@@ -55,7 +55,7 @@ export function useTelemetry(token: string, onError?: ErrorHandler) {
           ...current,
           [message.id]: message
         }));
-        setLiveTelemetry((current) => [message, ...current].slice(0, 12));
+        setLiveTelemetry((current) => [message, ...current].slice(0, 5));
         setWsStatus("connected");
       },
       (message) => {

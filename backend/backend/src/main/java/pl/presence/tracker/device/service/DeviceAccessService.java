@@ -45,6 +45,7 @@ public class DeviceAccessService {
         return new DeviceAccessResult(deviceId, true);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public boolean removeAccess(Long userId, String deviceId) {
         long deleted = accessRepository.deleteByUserIdAndDeviceId(userId, deviceId);
         return deleted > 0;

@@ -30,9 +30,13 @@ export function useTelemetry(token: string, onError?: ErrorHandler) {
 
       setLatestTelemetryById(nextMap);
     } catch (error) {
-      const message = (error as Error).message;
-      onError?.(message);
-      throw error;
+      const err = error as any;
+      const message = err?.message || "Failed to load telemetry";
+      
+      // Don't report auth errors - let parent handle logout
+      if (err?.status !== 401 && err?.status !== 403) {
+        onError?.(message);
+      }
     }
   }, [token, onError]);
 

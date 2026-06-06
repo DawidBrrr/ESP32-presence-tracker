@@ -31,19 +31,30 @@ export async function apiRequest<T>(
 
   if (!response.ok) {
     const contentType = response.headers.get("content-type") ?? "";
-    let message = response.statusText || "Request failed";
+    let message = `${response.status} ${response.statusText || "Request failed"}`;
 
-    if (contentType.includes("application/json")) {
-      const data = await response.json();
-      message = data?.message ? String(data.message) : JSON.stringify(data);
-    } else {
-      const text = await response.text();
-      if (text) {
-        message = text;
+    try {
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        message = data?.message ? String(data.message) : JSON.stringify(data);
+      } else {
+        const text = await response.text();
+        if (text) {
+          message = text;
+        }
       }
+    } catch {
+      // If parsing fails, use default message with status code
     }
 
-    throw new Error(message);
+    // Add helpful debugging info for 403 errors
+    if (response.status === 403) {
+      message += " (Check backend CORS configuration and token validity)";
+    }
+
+    const error = new Error(message);
+    (error as any).status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {
