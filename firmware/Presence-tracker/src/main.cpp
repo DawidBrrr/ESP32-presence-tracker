@@ -1,21 +1,34 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <HTTPClient.h>
 
 const int SENSOR_IN_PIN = 18;
 const int SENSOR_OUT_PIN = 19;
+const int BUTTON_PIN = 4;  
 
 const int SENSOR_ACTIVE_LEVEL = HIGH;
 const unsigned long SEQUENCE_TIMEOUT_MS = 2000;
+const unsigned long BUTTON_DEBOUNCE_MS = 50;
 
 const char* WIFI_SSID = "Pk_internet";
 const char* WIFI_PASSWORD = "123456789";
 const char* MQTT_BROKER = "10.225.155.155";
 const uint16_t MQTT_PORT = 1883;
 const char* MQTT_TOPIC = "telemetry";
-const char* DEVICE_ID = "esp32-test001";
+const char* DEVICE_ID = "esp32-6767";
+const char* DEVICE_TOKEN = "dev-7b3c2f9a";
+
+// Backend configuration
+const char* BACKEND_IP = "10.225.155.155";
+const uint16_t BACKEND_PORT = 8080;
+const char* REGISTER_ENDPOINT = "/api/devices/register";
 
 int peopleCount = 0;
+
+int buttonLastState = HIGH;
+unsigned long buttonLastPressMs = 0;
+bool buttonRegistered = false;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
@@ -151,10 +164,55 @@ void publishPeopleCount() {
   Serial.println(payload);
 }
 
+void registerDevice() {
+  if (!WiFi.isConnected()) {
+    Serial.println("WiFi nie polaczony, nie moge zarejestrować urzadzenia");
+    return;
+  }
+
+  HTTPClient http;
+  char url[128];
+  snprintf(url, sizeof(url), "http://%s:%d%s", BACKEND_IP, BACKEND_PORT, REGISTER_ENDPOINT);
+  
+  Serial.println("=== REJESTRACJA URZADZENIA ===");
+  Serial.print("URL: ");
+  Serial.println(url);
+  
+  http.begin(url);
+  http.addHeader("Content-Type", "application/json");
+  
+  char payload[96];
+  snprintf(payload, sizeof(payload), "{\"id\":\"%s\",\"token\":\"%s\"}", DEVICE_ID, DEVICE_TOKEN);
+  
+  Serial.print("Payload: ");
+  Serial.println(payload);
+  Serial.println("Wysylam POST...");
+  
+  int httpResponseCode = http.POST(payload);
+  
+  Serial.print("HTTP Response code: ");
+  Serial.println(httpResponseCode);
+  
+  if (httpResponseCode > 0) {
+    String response = http.getString();
+    Serial.print("Response body: ");
+    Serial.println(response);
+    Serial.println("✓ Rejestracja udana!");
+    buttonRegistered = true;
+  } else {
+    Serial.print("✗ Blad: ");
+    Serial.println(http.errorToString(httpResponseCode));
+  }
+  
+  Serial.println("=============================");
+  http.end();
+}
+
 
 void setup() {
   pinMode(SENSOR_IN_PIN, INPUT);
   pinMode(SENSOR_OUT_PIN, INPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Serial.begin(115200);
   delay(200);
@@ -171,6 +229,7 @@ void setup() {
 
   previousInState = digitalRead(SENSOR_IN_PIN);
   previousOutState = digitalRead(SENSOR_OUT_PIN);
+  buttonLastState = digitalRead(BUTTON_PIN);
   printPeopleCount();
 }
 
@@ -197,13 +256,23 @@ void loop() {
 
   mqttClient.loop();
 
+  // Handle button press
+  const int buttonCurrentState = digitalRead(BUTTON_PIN);
+  const unsigned long now = millis();
+  
+  if (buttonCurrentState == LOW && buttonLastState == HIGH && (now - buttonLastPressMs) > BUTTON_DEBOUNCE_MS) {
+    Serial.println("Guzik wcisniety! Wysylanie rejestracji...");
+    registerDevice();
+    buttonLastPressMs = now;
+  }
+  
+  buttonLastState = buttonCurrentState;
+
   const int inState = digitalRead(SENSOR_IN_PIN);
   const int outState = digitalRead(SENSOR_OUT_PIN);
 
   const bool inRising = isRisingEdge(inState, previousInState);
   const bool outRising = isRisingEdge(outState, previousOutState);
-
-  const unsigned long now = millis();
 
   if (sequenceState != WAITING_FOR_FIRST_TRIGGER && (now - sequenceStartMs) > SEQUENCE_TIMEOUT_MS) {
     sequenceState = WAITING_FOR_FIRST_TRIGGER;

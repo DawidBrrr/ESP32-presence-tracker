@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { ClientOnly } from "../components/ClientOnly";
 import { AuthSection } from "../features/auth/components/AuthSection";
 import { useAuth } from "../features/auth/hooks/useAuth";
 import { DashboardHeader } from "../features/dashboard/components/DashboardHeader";
@@ -12,7 +13,7 @@ import { TelemetrySection } from "../features/telemetry/components/TelemetrySect
 import { useTelemetry } from "../features/telemetry/hooks/useTelemetry";
 import type { Notice } from "../types/ui";
 
-export default function Home() {
+function HomeContent() {
   const { notice, showNotice, pushNotice, clearNotice } = useNotice();
   const { auth, token, register, login, logout } = useAuth();
 
@@ -81,5 +82,19 @@ export default function Home() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <ClientOnly
+      fallback={
+        <main className="app-shell">
+          <div className="mx-auto max-w-6xl px-6 py-10" />
+        </main>
+      }
+    >
+      <HomeContent />
+    </ClientOnly>
   );
 }

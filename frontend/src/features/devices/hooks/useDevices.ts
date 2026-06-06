@@ -12,15 +12,29 @@ import type {
 
 export function useDevices(token: string) {
   const [devices, setDevices] = useState<Device[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!token) {
       setDevices([]);
+      setError(null);
       return;
     }
 
-    const data = await getUserDevices(token);
-    setDevices(data);
+    try {
+      const data = await getUserDevices(token);
+      setDevices(data);
+      setError(null);
+    } catch (err) {
+      const error = err as any;
+      // Handle authentication errors - don't retry with invalid token
+      if (error.status === 401 || error.status === 403) {
+        setDevices([]);
+        setError("Authentication failed. Please log in again.");
+      } else {
+        setError(error.message);
+      }
+    }
   }, [token]);
 
   useEffect(() => {
@@ -49,5 +63,5 @@ export function useDevices(token: string) {
     [token]
   );
 
-  return { devices, refresh, addUserDevice, removeUserDevice };
+  return { devices, refresh, addUserDevice, removeUserDevice, error };
 }
